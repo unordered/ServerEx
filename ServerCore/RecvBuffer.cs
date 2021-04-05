@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ServerCore
 {
-    class RecvBuff
+    class RecvBuffer
     {
         /* 기본상태
          
@@ -25,7 +25,7 @@ namespace ServerCore
         int readPos;
         int writePos;
 
-        public RecvBuff (int bufferSize)
+        public RecvBuffer (int bufferSize)
         {
             _buffer = new ArraySegment<byte>(new byte[bufferSize],0,bufferSize);
 

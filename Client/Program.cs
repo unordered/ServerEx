@@ -19,7 +19,7 @@ namespace Client
 
             readString = "클라이언트에서 보내는 메시지...";
             byte[] bytes = Encoding.UTF8.GetBytes(readString);
-            Send(bytes);
+            Send(new ArraySegment<byte>(bytes));
 
         }
 

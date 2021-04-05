@@ -9,6 +9,15 @@ using ServerCore;
 
 namespace Server
 {
+    class Knight
+    {
+        public int hp;
+        public int attack;
+        public string name = "empty";
+        public List<int> skills = new List<int>();
+    }
+
+    // 하나의 연결, 하나의 쓰레드가 점유하는 공간이라고 봐도 무방
     class GameSession : Session
     {
         public override void OnConnect(EndPoint endPoint)
@@ -24,12 +33,35 @@ namespace Server
             //Console.WriteLine($"[From Client]: {recvString}");
 
 
-            string sendString = "서버에 연결하신 것을 환영합니다.";
-            byte[] bytes = Encoding.UTF8.GetBytes(sendString);
-            Send(bytes);
+            // 문자열 보내기
+            //string sendString = "서버에 연결하신 것을 환영합니다.";
+            //byte[] bytes = Encoding.UTF8.GetBytes(sendString);
+
+
+            // 패킷 보내기
+            // send buffer 만들기
+            // byte[] SendBuff = new byte[1024];
+
+
+            // SendBuffer 활요하기
+            ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+
+            // Knight 정보 보내기
+            Knight knight = new Knight() { hp = 100, attack = 10 };
+            // 바이트로 바꾸기
+            byte[] knightHpBuffer = BitConverter.GetBytes(knight.hp);
+            byte[] knightAtacckbuffer = BitConverter.GetBytes(knight.attack);
+            // bytes 버퍼에 해당 내용 담아서 보내기
+            Array.Copy(knightHpBuffer, 0, openSegment.Array, openSegment.Offset, knightHpBuffer.Length);
+            Array.Copy(knightAtacckbuffer, 0, openSegment.Array, openSegment.Offset + knightHpBuffer.Length, knightHpBuffer.Length);
+            // SendBuffer 사용 다 했으면 닫아줍니다.
+            ArraySegment<byte> sendBuff= SendBufferHelper.Close(knightHpBuffer.Length + knightHpBuffer.Length);
+            Send(sendBuff);
 
             Console.WriteLine("session.Send(bytes);");
             // clientSocket.Send(bytes, SocketFlags.None);
+
+
 
             Thread.Sleep(1000);
         }
