@@ -10,16 +10,49 @@ using System.Threading.Tasks;
 
 namespace Client
 {
+    struct Packet
+    {
+        public short size;
+        public short packetNumber;
+        public byte[] data;
+    }
+
     class GameSession : Session
     {
         public override void OnConnect(EndPoint endPoint)
         {
-            Console.Write("서버에 보낼 메시지를 입력해주세요: ");
-            string readString = Console.ReadLine();
 
-            readString = "클라이언트에서 보내는 메시지...";
-            byte[] bytes = Encoding.UTF8.GetBytes(readString);
-            Send(new ArraySegment<byte>(bytes));
+            //Console.Write("서버에 보낼 메시지를 입력해주세요.");
+            //string readString = Console.ReadLine();
+            //Console.Write("x 좌표:");
+            int x = 322;
+            //Console.Write("y 좌표:");
+            int y = 508;
+
+            Packet packet = new Packet();
+            packet.packetNumber = 8164;
+            packet.data = new byte[8];
+            
+            Buffer.BlockCopy(BitConverter.GetBytes(x), 0, packet.data, 0, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(y), 0, packet.data, 4, 4);
+
+            packet.size = Convert.ToInt16(packet.data.Length + 4);
+
+            byte[] sendbuff = new byte[packet.size];
+
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.size), 0, sendbuff, 0, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(packet.packetNumber), 0, sendbuff, 2, 2);
+            Buffer.BlockCopy(packet.data, 0, sendbuff, 4, packet.data.Length);
+
+
+            Send(new ArraySegment<byte>(sendbuff, 0, sendbuff.Length));
+
+            Console.WriteLine($"전송시작, 패킷 크기{sendbuff.Length}bytes."); ;
+
+
+            //readString = "클라이언트에서 보내는 메시지...";
+            //byte[] bytes = Encoding.UTF8.GetBytes(readString);
+            //Send(new ArraySegment<byte>(bytes));
 
         }
 
@@ -42,6 +75,7 @@ namespace Client
 
         public override void OnSend(int bytesCount)
         {
+
         }
     }
     class Program

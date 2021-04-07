@@ -9,6 +9,67 @@ using System.Threading.Tasks;
 
 namespace ServerCore
 {
+    public abstract class PacketSession : Session
+    {
+        readonly short packetSize = 2;
+
+        // 패킷 구조
+        // [size][size][p.number][p.number][..][..][..][..][..][size][size][p.number][p.number][..][..][..][..][..]
+        byte[] tempPacket = new byte[1024];
+        int curLength = 0;
+
+
+        public sealed override int OnRecv(ArraySegment<byte> recvbuf)
+        {
+            // 해당 코드는 패킷을 단 하나도 놓치지 않고 잡는 코드이다.
+            // 패킷이 완전하게 오지 않는다면 저장해 놓고 있다가, 다음 OnRecv에서 합친다.
+            short size = 0;
+
+            while (true)
+            {
+                
+                if(curLength ==0 && recvbuf.Count < packetSize)
+                {
+                    return -1;
+                }
+
+                if (curLength == 0)
+                {
+                    size = BitConverter.ToInt16(recvbuf.Array, recvbuf.Offset);
+
+                    if(recvbuf.Count == size)
+                    {
+                        OnPacketRecv(new ArraySegment<byte>(recvbuf.Array, 0,size));
+                        return 0;
+                    }
+                    else
+                    {
+                        tempPacket = recvbuf.Array;
+                    }
+                }
+                else
+                {
+                    // 패킷 바이트 하나씩 복사해주기
+                    for (int i = curLength; i < curLength + size; i++)
+                        tempPacket[i] = recvbuf.Array[i-curLength];
+                    
+                    curLength += recvbuf.Count;
+                }
+
+                if(curLength == Convert.ToInt32(size))
+                {
+                    OnPacketRecv(new ArraySegment<byte>(tempPacket, 0, size));
+                    curLength = 0;
+                }
+
+
+                
+            }
+        }
+
+        public abstract int OnPacketRecv(ArraySegment<byte> packetSegment);
+    }
+
     public abstract class Session
     {
         Socket _socket;

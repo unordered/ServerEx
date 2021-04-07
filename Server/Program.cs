@@ -18,7 +18,7 @@ namespace Server
     }
 
     // 하나의 연결, 하나의 쓰레드가 점유하는 공간이라고 봐도 무방
-    class GameSession : Session
+    class GameSession : PacketSession
     {
         public override void OnConnect(EndPoint endPoint)
         {
@@ -71,14 +71,28 @@ namespace Server
 
         }
 
-        public override int OnRecv(ArraySegment<byte> recvbuf)
+        public override int OnPacketRecv(ArraySegment<byte> packetSegment)
         {
-            string recvString = Encoding.UTF8.GetString(recvbuf.Array);
-            Console.WriteLine($"[From Client]: {recvString}");
+            // 패킷 크기 
+            short packetSize = BitConverter.ToInt16(packetSegment.Array, 0);
+            // 패킷 번호
+            short packetNumber = BitConverter.ToInt16(packetSegment.Array, 2);
+            // x,y좌표 받기
+            //  [x][x][x][x][y][y][y][y]
+            int xPos = -1;
+            int yPos = -1;
+            if ( packetNumber == 8164)
+            {
+                xPos = BitConverter.ToInt32(packetSegment.Array, 4);
+                yPos = BitConverter.ToInt32(packetSegment.Array, 8);
+            }
 
+            Console.WriteLine($"packet size{packetSize}, packet number{packetNumber}");
+            Console.WriteLine($"Player located by [{xPos}, {yPos}].");
 
-            return recvbuf.Count;
+            return 0;
         }
+
 
         public override void OnSend(int bytesCount)
         {
