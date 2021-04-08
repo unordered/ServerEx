@@ -112,7 +112,19 @@ namespace Server
             Console.WriteLine("서버");
             string hostName = Dns.GetHostName();
             IPHostEntry iPHostEntry = Dns.GetHostEntry(hostName);
-            IPEndPoint iPEndPoint = new IPEndPoint(iPHostEntry.AddressList[0], 7777);
+            IPEndPoint iPEndPoint =null;
+
+            foreach (var IP in iPHostEntry.AddressList)
+            {
+                if(IP.AddressFamily== System.Net.Sockets.AddressFamily.InterNetwork)
+                {
+                    iPEndPoint = new IPEndPoint(IP, 7777);
+                    break;
+                }
+            }
+
+            //  IPEndPoint iPEndPoint = new IPEndPoint(iPHostEntry.AddressList[0], 7777);
+            
             // Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
 
             // socket.Bind(iPEndPoint);

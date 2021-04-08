@@ -18,7 +18,7 @@ namespace ServerCore
         {
             this._makeSession = GameSession;
             // _OnAcceptHandler = OnAcceptHandler;
-            _ListenSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            _ListenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _ListenSocket.Bind(iPEndPoint);
             _ListenSocket.Listen(1000);
 

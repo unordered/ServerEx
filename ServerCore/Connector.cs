@@ -15,7 +15,7 @@ namespace ServerCore
         public void Connect(IPEndPoint iPEndPoint, Func<Session> sessionFactory)
         {
             this.sessionFactory = sessionFactory;
-            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.Completed+= OnConnectCompleted;
 

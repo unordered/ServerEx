@@ -112,13 +112,19 @@ namespace TempClient
             {
                 Connector connector = new Connector();
                 string hostName = Dns.GetHostName();
-                IPAddress iPAddress = Dns.GetHostEntry(hostName).AddressList[0];
+
+                //   IPAddress iPAddress = Dns.GetHostEntry(hostName).AddressList[0];
+
+                IPAddress iPAddress; 
+                System.Net.IPAddress.TryParse("175.192.72.95", out iPAddress);
+
                 IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, 7777);
                 connector.Connect(iPEndPoint, () => { return gameSession; });
             }
-            catch
+            catch(Exception exc)
             {
-                MessageBox.Show("서버 연결 실패!");
+                
+                MessageBox.Show(exc.Message, "서버 연결 실패!");
             }
 
         }
