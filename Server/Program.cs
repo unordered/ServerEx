@@ -56,7 +56,7 @@ namespace Server
             Array.Copy(knightAtacckbuffer, 0, openSegment.Array, openSegment.Offset + knightHpBuffer.Length, knightHpBuffer.Length);
             // SendBuffer 사용 다 했으면 닫아줍니다.
             ArraySegment<byte> sendBuff= SendBufferHelper.Close(knightHpBuffer.Length + knightHpBuffer.Length);
-            Send(sendBuff);
+            // Send(sendBuff);
 
             Console.WriteLine("session.Send(bytes);");
             // clientSocket.Send(bytes, SocketFlags.None);

@@ -40,7 +40,7 @@ namespace ServerCore
                     if(recvbuf.Count == size)
                     {
                         OnPacketRecv(new ArraySegment<byte>(recvbuf.Array, 0,size));
-                        return 0;
+                        return size;
                     }
                     else
                     {
@@ -62,7 +62,7 @@ namespace ServerCore
                     curLength = 0;
                 }
 
-
+                return curLength;
                 
             }
         }
@@ -100,6 +100,7 @@ namespace ServerCore
 
         public void RegisterRecv(SocketAsyncEventArgs args)
         {
+            Console.WriteLine("RegisterRecv");
             // 커서 이동 방지
             recvBuffer.Clean();
             args.SetBuffer(recvBuffer.WriteSegment.Array,0,recvBuffer.FreeSize);
@@ -226,6 +227,7 @@ namespace ServerCore
                         //Console.WriteLine($"OnSendCompleted, 전송된 bytes:{args.BytesTransferred} byte");
                         OnSend(args.BytesTransferred);
                         //Send(args.Buffer);
+                        args.BufferList.Clear();
                         if (sendQueue.Count != 0)
                             RegisterSend(args);
                     }
