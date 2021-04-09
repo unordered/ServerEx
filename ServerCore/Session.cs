@@ -16,56 +16,67 @@ namespace ServerCore
         // 패킷 구조
         // [size][size][p.number][p.number][..][..][..][..][..][size][size][p.number][p.number][..][..][..][..][..]
         byte[] tempPacket = new byte[1024];
-        int curLength = 0;
 
 
         public sealed override int OnRecv(ArraySegment<byte> recvbuf)
         {
             // 해당 코드는 패킷을 단 하나도 놓치지 않고 잡는 코드이다.
             // 패킷이 완전하게 오지 않는다면 저장해 놓고 있다가, 다음 OnRecv에서 합친다.
-            short size = 0;
+            int curLength = 0;
+
 
             while (true)
             {
-                
-                if(curLength ==0 && recvbuf.Count < packetSize)
+
+                if (curLength == 0 && recvbuf.Count < packetSize)
                 {
-                    return -1;
+                    return curLength;
                 }
 
-                if (curLength == 0)
-                {
-                    size = BitConverter.ToInt16(recvbuf.Array, recvbuf.Offset);
 
-                    if(recvbuf.Count == size)
-                    {
-                        OnPacketRecv(new ArraySegment<byte>(recvbuf.Array, 0,size));
-                        return size;
-                    }
-                    else
-                    {
-                        tempPacket = recvbuf.Array;
-                    }
-                }
-                else
+                short size = BitConverter.ToInt16(recvbuf.Array, recvbuf.Offset + curLength);
+
+
+                OnPacketRecv(new ArraySegment<byte>(recvbuf.Array, curLength, size));
+                curLength += size;
+
+                if (curLength == recvbuf.Count)
                 {
-                    // 패킷 바이트 하나씩 복사해주기
-                    for (int i = curLength; i < curLength + size; i++)
-                        tempPacket[i] = recvbuf.Array[i-curLength];
-                    
-                    curLength += recvbuf.Count;
+                    return curLength;
                 }
 
-                if(curLength == Convert.ToInt32(size))
-                {
-                    OnPacketRecv(new ArraySegment<byte>(tempPacket, 0, size));
-                    curLength = 0;
-                }
-
-                return curLength;
-                
             }
         }
+
+
+
+        //public static readonly int HeaderSize = 2;
+        //// [size(2)][packetId(2)][ ... ][size(2)][packetId(2)][ ... ]
+        //public sealed override int OnRecv(ArraySegment<byte> buffer)
+        //{
+        //    Console.WriteLine($"OnRecv/buffer size:{buffer.Count}");
+        //    int processLen = 0;
+
+        //    while (true)
+        //    {
+        //        // 최소한 헤더는 파싱할 수 있는지 확인
+        //        if (buffer.Count < HeaderSize)
+        //            break;
+
+        //        // 패킷이 완전체로 도착했는지 확인
+        //        ushort dataSize = BitConverter.ToUInt16(buffer.Array, buffer.Offset);
+        //        if (buffer.Count < dataSize)
+        //            break;
+
+        //        // 여기까지 왔으면 패킷 조립 가능
+        //        OnPacketRecv(new ArraySegment<byte>(buffer.Array, buffer.Offset, dataSize));
+
+        //        processLen += dataSize;
+        //        buffer = new ArraySegment<byte>(buffer.Array, buffer.Offset + dataSize, buffer.Count - dataSize);
+        //    }
+
+        //    return processLen;
+        //}
 
         public abstract int OnPacketRecv(ArraySegment<byte> packetSegment);
     }
@@ -116,6 +127,7 @@ namespace ServerCore
         public void OnReciveCompleted(object obj, SocketAsyncEventArgs args)
         {
             Console.WriteLine("OnReciveCompleted");
+            //&& args.BytesTransferred > 0
             if (args.SocketError == SocketError.Success && args.BytesTransferred > 0)
             {
                 //string recvString = Encoding.UTF8.GetString(args.Buffer);

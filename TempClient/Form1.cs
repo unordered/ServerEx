@@ -101,10 +101,13 @@ namespace TempClient
                 Thread.Sleep(30);
             }
 
+
         }
 
         GameSession gameSession = new GameSession();
-      //  Connector connector;
+        //  Connector connector;
+    
+
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -120,11 +123,26 @@ namespace TempClient
 
                 IPEndPoint iPEndPoint = new IPEndPoint(iPAddress, 7777);
                 connector.Connect(iPEndPoint, () => { return gameSession; });
+
+                const int MAX_READ = 100;
+                int currentRead = 0;
+                while(!connector.isConnected())
+                {
+                    Console.WriteLine($"서버 연결중...{currentRead}/100");
+                    Thread.Sleep(100);
+                    if(currentRead > MAX_READ)
+                    {
+                        throw new Exception("서버 연결 실패");
+                    }
+                    currentRead++;
+                }
+
             }
             catch(Exception exc)
             {
                 
-                MessageBox.Show(exc.Message, "서버 연결 실패!");
+                MessageBox.Show(exc.Message, "경고");
+                Close();
             }
 
         }

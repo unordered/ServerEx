@@ -18,14 +18,23 @@ namespace ServerCore
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.Completed+= OnConnectCompleted;
-
+            _socket = socket;
             args.UserToken = socket;
             args.RemoteEndPoint = iPEndPoint;
             RegisterConnect(args);
         }
 
+        Socket _socket;
+
+        // 추가한 내용
+        public bool isConnected()
+        {
+            return _socket.Connected;
+        }
+
         void RegisterConnect(SocketAsyncEventArgs args)
         {
+           
             Socket socket = args.UserToken as Socket;
             if (socket == null)
             {
