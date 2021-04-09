@@ -23,7 +23,7 @@ namespace ServerCore
             // 해당 코드는 패킷을 단 하나도 놓치지 않고 잡는 코드이다.
             // 패킷이 완전하게 오지 않는다면 저장해 놓고 있다가, 다음 OnRecv에서 합친다.
             int curLength = 0;
-
+            Console.WriteLine($"OnRecv/buffer size:{recvbuf.Count}");
 
             while (true)
             {
@@ -37,7 +37,7 @@ namespace ServerCore
                 short size = BitConverter.ToInt16(recvbuf.Array, recvbuf.Offset + curLength);
 
 
-                OnPacketRecv(new ArraySegment<byte>(recvbuf.Array, curLength, size));
+                OnPacketRecv(new ArraySegment<byte>(recvbuf.Array, recvbuf.Offset + curLength, size));
                 curLength += size;
 
                 if (curLength == recvbuf.Count)
@@ -81,6 +81,7 @@ namespace ServerCore
         public abstract int OnPacketRecv(ArraySegment<byte> packetSegment);
     }
 
+
     public abstract class Session
     {
         Socket _socket;
@@ -105,7 +106,7 @@ namespace ServerCore
             sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);
             sendArgs.BufferList = pendingList;
 
-           // RecvArgs.SetBuffer(new byte[1024], 0, 1024);
+            // RecvArgs.SetBuffer(new byte[1024], 0, 1024);
             RegisterRecv(RecvArgs);
         }
 
@@ -114,11 +115,11 @@ namespace ServerCore
             Console.WriteLine("RegisterRecv");
             // 커서 이동 방지
             recvBuffer.Clean();
-            args.SetBuffer(recvBuffer.WriteSegment.Array,0,recvBuffer.FreeSize);
+            args.SetBuffer(recvBuffer.WriteSegment.Array, 0, recvBuffer.FreeSize);
 
             bool pending = false;
             pending = _socket.ReceiveAsync(args);
-            if(pending == false)
+            if (pending == false)
             {
                 OnReciveCompleted(null, args);
             }
@@ -134,7 +135,7 @@ namespace ServerCore
                 //Console.WriteLine($"[From Client]: {recvString}");
 
                 //  받은 만큼 커서 이동
-                if(recvBuffer.OnWrite(args.BytesTransferred)==false)
+                if (recvBuffer.OnWrite(args.BytesTransferred) == false)
                 {
                     Dispose();
                     return;
@@ -143,20 +144,20 @@ namespace ServerCore
                 // 컨텐츠쪽으로 데이터를 넘겨준다. 
                 // OnRecv(args.Buffer);
                 int processLength = OnRecv(recvBuffer.ReadSegment);
-                if(processLength < 0 || processLength > recvBuffer.DataSize)
+                if (processLength < 0 || processLength > recvBuffer.DataSize)
                 {
                     Dispose();
                     return;
                 }
 
                 // 처리를 한 커서를 이동해준다.
-                if(recvBuffer.OnRead(processLength) == false)
+                if (recvBuffer.OnRead(processLength) == false)
                 {
                     Dispose();
                     return;
                 }
 
-                
+
                 RegisterRecv(args);
             }
             else
@@ -167,7 +168,7 @@ namespace ServerCore
                 //_socket.Close();
                 //Dispose();
             }
-            
+
         }
 
         object lockOjbect = new object();
@@ -183,7 +184,7 @@ namespace ServerCore
                     _socket.Close();
                     _socket = null;
                 }
-                
+
             }
         }
 
@@ -195,7 +196,7 @@ namespace ServerCore
             lock (sendLock)
             {
                 sendQueue.Enqueue(sendBuf);
-                if(pendingList.Count == 0)
+                if (pendingList.Count == 0)
                     RegisterSend(sendArgs);
             }
         }
@@ -206,7 +207,7 @@ namespace ServerCore
             // SetBufferList에 넣기
             // 그다음 전송
 
-            while(sendQueue.Count != 0)
+            while (sendQueue.Count != 0)
             {
                 ArraySegment<byte> temp = sendQueue.Dequeue();
                 pendingList.Add(temp);
@@ -219,7 +220,7 @@ namespace ServerCore
             {
                 OnSendCompleted(null, sendArgs);
             }
-            
+
             Console.WriteLine($"args.BufferList.Count: {args.BufferList.Count}");
 
 
@@ -259,5 +260,5 @@ namespace ServerCore
             }
         }
 
-     }
+    }
 }

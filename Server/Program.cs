@@ -74,17 +74,17 @@ namespace Server
         public override int OnPacketRecv(ArraySegment<byte> packetSegment)
         {
             // 패킷 크기 
-            short packetSize = BitConverter.ToInt16(packetSegment.Array, 0);
+            short packetSize = BitConverter.ToInt16(packetSegment.Array, 0+packetSegment.Offset);
             // 패킷 번호
-            short packetNumber = BitConverter.ToInt16(packetSegment.Array, 2);
+            short packetNumber = BitConverter.ToInt16(packetSegment.Array, 2+packetSegment.Offset);
             // x,y좌표 받기
             //  [x][x][x][x][y][y][y][y]
             int xPos = -1;
             int yPos = -1;
             if ( packetNumber == 8164)
             {
-                xPos = BitConverter.ToInt32(packetSegment.Array, 4);
-                yPos = BitConverter.ToInt32(packetSegment.Array, 8);
+                xPos = BitConverter.ToInt32(packetSegment.Array , 4 + packetSegment.Offset);
+                yPos = BitConverter.ToInt32(packetSegment.Array, 8 + packetSegment.Offset);
             }
 
             Console.WriteLine($"packet size{packetSize}, packet number{packetNumber}");
