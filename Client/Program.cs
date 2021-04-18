@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-    struct Packet
+    class Packet
     {
         public short size;
         public short packetNumber;

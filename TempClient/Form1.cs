@@ -8,58 +8,12 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 using System.Windows.Forms;
 using ServerCore;
 
 namespace TempClient
 {
-    struct Packet
-    {
-        public short size;
-        public short packetNumber;
-        public byte[] data;
-    }
-
-
-
-    class GameSession : PacketSession
-    {
-        public Queue<byte[]> queue = new Queue<byte[]>();
-        public object queueLockObject = new object();
-        public override void OnConnect(EndPoint endPoint)
-        {
-            Console.WriteLine("연결 완료");
-            while(true)
-            {
-                lock (queueLockObject)
-                {
-                    
-                    if (queue.Count > 0)
-                    {
-                        byte[] sendBuff = queue.Dequeue();
-                        Send(new ArraySegment<byte>(sendBuff, 0, sendBuff.Length));
-                    }
-                }
-            }
-        }
-
-        public override void OnDispose()
-        {
-            Console.WriteLine("연결 종료");
-        }
-
-        public override int OnPacketRecv(ArraySegment<byte> packetSegment)
-        {
-            return 0;
-        }
-
-        public override void OnSend(int bytesCount)
-        {
-            Console.WriteLine($"{bytesCount} bytes 전송 완료");
-            return;
-        }
-    }
-
     public partial class Form1 : Form
     {
         public Form1()
@@ -77,25 +31,35 @@ namespace TempClient
                 //Console.Write("y 좌표:");
                 int y = e.Y;
 
-                Packet packet = new Packet();
-                packet.packetNumber = 8164;
-                packet.data = new byte[8];
+                PositionInfo packet = new PositionInfo();
+                packet.size = 12;
+                packet.packetNumber = (short)PacketId.SendPosition;
+                packet.xPos = x;
+                packet.yPos = y;
+                // packet.data = new byte[8];
 
-                Buffer.BlockCopy(BitConverter.GetBytes(x), 0, packet.data, 0, 4);
-                Buffer.BlockCopy(BitConverter.GetBytes(y), 0, packet.data, 4, 4);
 
-                packet.size = Convert.ToInt16(packet.data.Length + 4);
 
-                byte[] sendbuff = new byte[packet.size];
+                //byte[] sendBuffer = new byte[12];
 
-                Buffer.BlockCopy(BitConverter.GetBytes(packet.size), 0, sendbuff, 0, 2);
-                Buffer.BlockCopy(BitConverter.GetBytes(packet.packetNumber), 0, sendbuff, 2, 2);
-                Buffer.BlockCopy(packet.data, 0, sendbuff, 4, packet.data.Length);
-                gameSession.queue.Enqueue(sendbuff);
+
+                //Buffer.BlockCopy(BitConverter.GetBytes(packet.size), 0, sendBuffer, 0, 2);
+                //Buffer.BlockCopy(BitConverter.GetBytes(packet.packetNumber), 0, sendBuffer, 2, 2);
+                //Buffer.BlockCopy(BitConverter.GetBytes(x), 0, sendBuffer, 4, 4);
+                //Buffer.BlockCopy(BitConverter.GetBytes(y), 0, sendBuffer, 8, 4);
+
+                // packet.size = Convert.ToInt16(packet.data.Length + 4);
+
+                //byte[] sendbuff = new byte[packet.size];
+
+                //Buffer.BlockCopy(BitConverter.GetBytes(packet.size), 0, sendbuff, 0, 2);
+                //Buffer.BlockCopy(BitConverter.GetBytes(packet.packetNumber), 0, sendbuff, 2, 2);
+                //Buffer.BlockCopy(packet.data, 0, sendbuff, 4, packet.data.Length);
+                gameSession.queue.Enqueue(packet);
 
 
                 Console.WriteLine($"x: {e.X} y: {e.Y}");
-                Console.WriteLine($"전송시작, 패킷 크기{sendbuff.Length}bytes."); ;
+                Console.WriteLine($"전송시작, 패킷 크기{packet.size}bytes."); ;
 
 
                 Thread.Sleep(30);
@@ -104,7 +68,7 @@ namespace TempClient
 
         }
 
-        GameSession gameSession = new GameSession();
+        ServerSession gameSession = new ServerSession();
         //  Connector connector;
     
 
@@ -146,5 +110,64 @@ namespace TempClient
             }
 
         }
+
+        // 텍스트 전송
+        private void button1_Click(object sender, EventArgs e)
+        {
+            lock (gameSession.queueLockObject)
+            {
+                //Console.Write("x 좌표:");
+                //int x = e.X;
+                //Console.Write("y 좌표:");
+                //int y = e.Y;
+
+
+
+               SendMessage packet = new SendMessage();
+                // packet.packetNumber = 7799;
+                packet.packetNumber = (short)PacketId.SendMessage;
+
+                byte[] textbuff = Encoding.UTF8.GetBytes(textBox1.Text);
+
+                packet.data = textbuff;
+
+                //Buffer.BlockCopy(BitConverter.GetBytes(x), 0, packet.data, 0, 4);
+                //Buffer.BlockCopy(BitConverter.GetBytes(y), 0, packet.data, 4, 4);
+
+                packet.size = Convert.ToInt16(packet.data.Length + 4);
+
+                byte[] sendbuff = new byte[packet.size];
+
+
+                gameSession.queue.Enqueue(packet);
+
+                //     BitConverter.TryWriteBytes(new Span<byte>(sendbuff, 4, textBox1.Text.Length), textBox1.Text);
+
+
+                //Buffer.BlockCopy(BitConverter.GetBytes(packet.size), 0, sendbuff, 0, 2);
+                //Buffer.BlockCopy(BitConverter.GetBytes(packet.packetNumber), 0, sendbuff, 2, 2);
+                ////  Buffer.BlockCopy(packet.data, 0, sendbuff, 4, packet.data.Length);
+
+                //Buffer.BlockCopy(textbuff, 0, sendbuff, 4, textbuff.Length);
+              
+                //gameSession.queue.Enqueue(sendbuff);
+
+
+                //Console.WriteLine($"x: {e.X} y: {e.Y}");
+                Console.WriteLine($"보낸 내용: {textBox1.Text}");
+                Console.WriteLine($"전송시작, 패킷 크기{packet.size}bytes."); ;
+
+                textBox1.Text = "";
+                Thread.Sleep(30);
+            }
+        }
+
+        private void textBox1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.KeyCode == Keys.Enter)
+            button1_Click(sender, e);
+        }
     }
+
+
 }
