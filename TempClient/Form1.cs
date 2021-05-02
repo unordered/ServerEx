@@ -127,16 +127,17 @@ namespace TempClient
                 // packet.packetNumber = 7799;
                 packet.packetNumber = (short)PacketId.SendMessage;
 
-                byte[] textbuff = Encoding.UTF8.GetBytes(textBox1.Text);
+                // byte[] textbuff = Encoding.UTF8.GetBytes(textBox1.Text);
 
-                packet.data = textbuff;
-
+                packet.message = textBox1.Text;
+                packet.size = (short)(Encoding.Unicode.GetByteCount(packet.message)+4);
+                
                 //Buffer.BlockCopy(BitConverter.GetBytes(x), 0, packet.data, 0, 4);
                 //Buffer.BlockCopy(BitConverter.GetBytes(y), 0, packet.data, 4, 4);
 
-                packet.size = Convert.ToInt16(packet.data.Length + 4);
+                // packet.size = Convert.ToInt16(packet.data.Length + 4);
 
-                byte[] sendbuff = new byte[packet.size];
+                //byte[] sendbuff = new byte[packet.size];
 
 
                 gameSession.queue.Enqueue(packet);

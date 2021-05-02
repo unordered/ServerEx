@@ -9,32 +9,130 @@ using System.Threading.Tasks;
 
 namespace Server
 {
-    class Packet
+    //class Packet
+    //{
+    //    public short size;
+    //    public short packetNumber;
+    //    public byte[] data;
+    //}
+
+    //class PlayerInfoReq : Packet
+    //{
+
+    //}
+
+    //class PlayerInfoOk : Packet
+    //{
+
+    //}
+
+    //class SendMessage : Packet
+    //{
+    //    //  public byte[] data;
+    //}
+
+    //class PositionInfo : Packet
+    //{
+    //    int xPos;
+    //    int yPos;
+    //}
+
+    abstract class Packet
     {
         public short size;
         public short packetNumber;
-        public byte[] data;
+
+        abstract public ArraySegment<byte> Write();
+        abstract public void Read(ArraySegment<byte> byteData);
     }
 
     class PlayerInfoReq : Packet
     {
+        public override void Read(ArraySegment<byte> byteData)
+        {
+            throw new NotImplementedException();
+        }
 
+        public override ArraySegment<byte> Write()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     class PlayerInfoOk : Packet
     {
+        public override void Read(ArraySegment<byte> byteData)
+        {
+            throw new NotImplementedException();
+        }
 
+        public override ArraySegment<byte> Write()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     class SendMessage : Packet
     {
-        //  public byte[] data;
+        public string message;
+
+        public override void Read(ArraySegment<byte> byteData)
+        {
+            size = BitConverter.ToInt16(byteData.Array, 0 + byteData.Offset);
+            packetNumber = BitConverter.ToInt16(byteData.Array, 2 + byteData.Offset);
+
+            ArraySegment<byte> byteString = new ArraySegment<byte>(byteData.Array, 4 + byteData.Offset, size - 4);
+            message = Encoding.Unicode.GetString(byteString.Array,4+ byteData.Offset, size - 4);
+        }
+
+        public override ArraySegment<byte> Write()
+        {
+            ArraySegment<byte> sendBuffer = SendBufferHelper.Open(4096);
+
+            Buffer.BlockCopy(BitConverter.GetBytes(size), 0, sendBuffer.Array, sendBuffer.Offset, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(packetNumber), 0, sendBuffer.Array, sendBuffer.Offset + 2, 2);
+            Buffer.BlockCopy(Encoding.Unicode.GetBytes(message), 0, sendBuffer.Array, sendBuffer.Offset + 4, Encoding.Unicode.GetByteCount(message));
+
+            return SendBufferHelper.Close(Encoding.Unicode.GetByteCount(message) + 4);
+        }
     }
 
     class PositionInfo : Packet
     {
-        int xPos;
-        int yPos;
+        public int xPos;
+        public int yPos;
+
+        public PositionInfo()
+        {
+            packetNumber = (short)PacketId.SendPosition;
+        }
+
+        public override void Read(ArraySegment<byte> byteData)
+        {
+            // 패킷 크기 
+            size = BitConverter.ToInt16(byteData.Array, 0 + byteData.Offset);
+            //size = BitConverter.ToInt64(new ReadOnlySpan<byte>(byteData.Array, byteData.Offset + size, byteData.Count - size));
+            // 패킷 번호
+            packetNumber = BitConverter.ToInt16(byteData.Array, 2 + byteData.Offset);
+
+            xPos = BitConverter.ToInt32(byteData.Array, 4 + byteData.Offset);
+            yPos = BitConverter.ToInt32(byteData.Array, 8 + byteData.Offset);
+
+
+        }
+
+        // 패킷 내용을 눌러짜서 ArraySegment<byte>로 반환한다.
+        public override ArraySegment<byte> Write()
+        {
+            ArraySegment<byte> sendBuffer = SendBufferHelper.Open(4096);
+
+            Buffer.BlockCopy(BitConverter.GetBytes(size), 0, sendBuffer.Array, sendBuffer.Offset, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(packetNumber), 0, sendBuffer.Array, sendBuffer.Offset + 2, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(xPos), 0, sendBuffer.Array, sendBuffer.Offset + 4, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(yPos), 0, sendBuffer.Array, sendBuffer.Offset + 8, 4);
+
+            return SendBufferHelper.Close(12);
+        }
     }
 
     public enum PacketId
@@ -101,6 +199,8 @@ namespace Server
 
         public override int OnPacketRecv(ArraySegment<byte> packetSegment)
         {
+
+
             // 패킷 크기 
             short packetSize = BitConverter.ToInt16(packetSegment.Array, 0 + packetSegment.Offset);
             // 패킷 번호
@@ -110,20 +210,29 @@ namespace Server
 
             if (packetNumber == (short)PacketId.SendPosition)
             {
+                PositionInfo packet = new PositionInfo();
+                packet.Read(packetSegment);
                 // x,y좌표 받기
                 //  [x][x][x][x][y][y][y][y]
                 int xPos = -1;
                 int yPos = -1;
                 {
-                    xPos = BitConverter.ToInt32(packetSegment.Array, 4 + packetSegment.Offset);
-                    yPos = BitConverter.ToInt32(packetSegment.Array, 8 + packetSegment.Offset);
+                    //xPos = BitConverter.ToInt32(packetSegment.Array, 4 + packetSegment.Offset);
+                    xPos = packet.xPos;
+                    //yPos = BitConverter.ToInt32(packetSegment.Array, 8 + packetSegment.Offset);
+                    yPos = packet.yPos;
                 }
 
                 Console.WriteLine($"Player located by [{xPos}, {yPos}].");
             }
             else if (packetNumber == (short)PacketId.SendMessage)
             {
-                string str = Encoding.UTF8.GetString(packetSegment.Array, 4 + packetSegment.Offset, packetSize - 4);
+                SendMessage packet = new SendMessage();
+                packet.Read(packetSegment);
+
+
+                string str = packet.message;
+                // string str = Encoding.UTF8.GetString(packetSegment.Array, 4 + packetSegment.Offset, packetSize - 4);
                 Console.WriteLine();
 
                 Console.WriteLine($"string: {str} / send by Client");

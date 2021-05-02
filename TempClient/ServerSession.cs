@@ -45,16 +45,26 @@ namespace TempClient
 
     class SendMessage : Packet
     {
-        public byte[] data;
+        public string message;
 
         public override void Read(ArraySegment<byte> byteData)
         {
-            throw new NotImplementedException();
+            size = BitConverter.ToInt16(byteData.Array, 0 + byteData.Offset);
+            packetNumber = BitConverter.ToInt16(byteData.Array, 2 + byteData.Offset);
+            
+            ArraySegment<byte> byteString = new ArraySegment<byte>(byteData.Array,4 +byteData.Offset , size-4);
+            message = Encoding.Unicode.GetString(byteString.Array, 0, size - 4);
         }
 
         public override ArraySegment<byte> Write()
         {
-            throw new NotImplementedException();
+            ArraySegment<byte> sendBuffer = SendBufferHelper.Open(4096);
+
+            Buffer.BlockCopy(BitConverter.GetBytes(size), 0, sendBuffer.Array, sendBuffer.Offset, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(packetNumber), 0, sendBuffer.Array, sendBuffer.Offset + 2, 2);
+            Buffer.BlockCopy(Encoding.Unicode.GetBytes(message), 0,sendBuffer.Array, sendBuffer.Offset+4 ,Encoding.Unicode.GetByteCount(message));
+    
+            return SendBufferHelper.Close(Encoding.Unicode.GetByteCount(message)+4);
         }
     }
 
@@ -141,14 +151,15 @@ namespace TempClient
                         else if(sendPacket.packetNumber == (short)PacketId.SendMessage)
                         {
                             SendMessage sendMessage = (SendMessage)sendPacket;
-                            byte[] sendBuffer = new byte[sendMessage.size];
+                            // byte[] sendBuffer = new byte[sendMessage.size];
 
-                            Buffer.BlockCopy(BitConverter.GetBytes(sendMessage.size), 0, sendBuffer, 0, 2);
-                            Buffer.BlockCopy(BitConverter.GetBytes(sendMessage.packetNumber), 0, sendBuffer, 2, 2);
-                            Buffer.BlockCopy(sendMessage.data, 0, sendBuffer, 4, sendMessage.data.Length);
+                            //Buffer.BlockCopy(BitConverter.GetBytes(sendMessage.size), 0, sendBuffer, 0, 2);
+                            //Buffer.BlockCopy(BitConverter.GetBytes(sendMessage.packetNumber), 0, sendBuffer, 2, 2);
+                            //Buffer.BlockCopy(sendMessage.data, 0, sendBuffer, 4, sendMessage.data.Length);
 
 
-                            Send(new ArraySegment<byte>(sendBuffer, 0, sendBuffer.Length));
+                            //Send(new ArraySegment<byte>(sendBuffer, 0, sendBuffer.Length));
+                            Send(sendMessage.Write());
 
                         }
 
